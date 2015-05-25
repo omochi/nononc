@@ -672,6 +672,27 @@ class Parser
 			func_body), warns, nil
 	end
 
+	def parse_return_statement_we(return_token)
+		begin_indent = @indent_state
+		begin_pos = token_reader.pos
+
+		warns = []
+
+		exp_token_begin_pos = token_reader.pos
+		exp_token, ws1 = read_code_token_w()
+		ws1 += check_token_no_newline(exp_token_begin_pos, exp_token)
+		warns += ws1
+		exp, ws2, err = parse_expression_we(exp_token)
+		if err
+			@indent_state = begin_indent
+			seek_to_pos(begin_pos)
+			return nil, [], err
+		end
+		warns += ws2
+
+		return ReturnNode.new(return_token, exp), warns, nil
+	end
+
 	# ret: node, arrow_token, warns, err
 	def parse_closure_we(left_paren_token)
 		begin_indent = @indent_state
@@ -738,13 +759,21 @@ class Parser
 		warns = []
 
 		if token.is_a?(KeywordToken)
-			if token.str == "func"
+			case token.str
+			when "func"
 				func, ws1, err = parse_func_statement_we(token)
 				if err
 					return nil, [], err
 				end
 				warns += ws1
 				return func, warns, nil
+			when "return"
+				retn, ws1, err = parse_return_statement_we(token)
+				if err
+					return nil, [], err
+				end
+				warns += ws1
+				return retn, warns, nil
 			end
 		end
 

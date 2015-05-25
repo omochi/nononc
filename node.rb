@@ -188,15 +188,14 @@ class ClosureNode < Node
 		super([], children)
 	end
 end
-
-class BlockNode < Node
-	def initialize(statements)
-		super([], statements)
-	end
-end
 class ReturnNode < Node
 	def initialize(return_token, exp)
 		super([return_token], [exp])
+	end
+end
+class BlockNode < Node
+	def initialize(statements)
+		super([], statements)
 	end
 end
 

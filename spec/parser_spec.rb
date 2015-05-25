@@ -1216,6 +1216,16 @@ describe "parser" do
 		expect(node[0].body[0].str).to eq "a"
 	end
 
+	it "return 1" do
+		r = Parser.new(
+			"return 1 + 2")
+		token, ws = r.read_token_w()
+		node, ws, err = r.parse_return_statement_we(token)
+		expect(ws.length).to eq 0
+		expect(node).to be_a ReturnNode
+		expect(node[0]).to be_a AddNode
+	end
+
 	it "block 1" do
 		r = Parser.new(
 			"a\n" +
@@ -1373,6 +1383,25 @@ describe "parser" do
 			)
 		node, ws, err = r.parse_block_statement_we()
 		expect(ws.length).to eq 0
+	end
+
+	it "block 13" do
+		r = Parser.new(
+			"func f(a: Int, b: Int)-> Int\n" +
+			"  return a + b + 1")
+		node, ws, err = r.parse_block_statement_we()
+		expect(ws.length).to eq 0
+		expect(node).to be_a BlockNode
+		expect(node[0]).to be_a FunctionDefinitionNode
+		expect(node[0].body[0]).to be_a ReturnNode
+		expect(node[0].body[0][0]).to be_a AddNode
+		expect(node[0].body[0][0][0]).to be_a AddNode
+		expect(node[0].body[0][0][1]).to be_a IntLiteralNode
+		expect(node[0].body[0][0][1].value).to eq 1
+		expect(node[0].body[0][0][0][0]).to be_a NameNode
+		expect(node[0].body[0][0][0][0].str).to eq "a"
+		expect(node[0].body[0][0][0][1]).to be_a NameNode
+		expect(node[0].body[0][0][0][1].str).to eq "b"
 	end
 
 end
