@@ -28,14 +28,6 @@ class Parser
 		end
 		return []
 	end
-	def check_token_hanging_indent(begin_pos, token)
-		warns = []
-		if begin_pos.line != token.pos.line
-			@indent_state = @indent_state.set_hanging(true)
-			warns += check_token_indent(token)
-		end
-		return warns
-	end
 	def check_token_no_newline(begin_pos, token)
 		warns = []
 		if token.pos.line != begin_pos.line
@@ -50,7 +42,7 @@ class Parser
 		end
 		return nil
 	end
-	def check_token_hanging2(begin_pos, token)
+	def check_token_hanging(begin_pos, token)
 		if begin_pos.line != token.pos.line
 			@indent_state = @indent_state.set_hanging(true)
 			return check_token_indent2(token)
@@ -229,7 +221,7 @@ class Parser
 				end
 				elem1 = CallNode.new(elem1, paren)
 			elsif token.is_a?(DotToken)
-				if err = check_token_hanging2(token_begin_pos, token)
+				if err = check_token_hanging(token_begin_pos, token)
 					break
 				end
 				warns += ws2
@@ -308,14 +300,14 @@ class Parser
 
 			operator_token, ws2 = read_code_token_w()
 			if operator_token.is_factor_operator
-				if err = check_token_hanging2(token_begin_pos, operator_token)
+				if err = check_token_hanging(token_begin_pos, operator_token)
 					break
 				end
 				warns += ws2
 
 				factor_token_begin_pos = token_reader.pos
 				factor_token, ws3 = read_code_token_w()
-				if err = check_token_hanging2(factor_token_begin_pos, factor_token)
+				if err = check_token_hanging(factor_token_begin_pos, factor_token)
 					@indent_state = begin_indent
 					seek_to_pos(begin_pos)
 					return nil, [], err
@@ -363,14 +355,14 @@ class Parser
 
 			operator_token, ws2 = read_code_token_w()
 			if operator_token.is_term_operator
-				if err = check_token_hanging2(token_begin_pos, operator_token)
+				if err = check_token_hanging(token_begin_pos, operator_token)
 					break
 				end
 				warns += ws2
 
 				term_token_begin_pos = token_reader.pos
 				term_token, ws3 = read_code_token_w()
-				if err = check_token_hanging2(term_token_begin_pos, term_token)
+				if err = check_token_hanging(term_token_begin_pos, term_token)
 					@indent_state = begin_indent
 					seek_to_pos(begin_pos)
 					return nil, [], err
@@ -427,7 +419,7 @@ class Parser
 
 			comma_token, ws2 = read_code_token_w()
 			if comma_token.is_a?(CommaToken)
-				if err = check_token_hanging2(token_begin_pos, comma_token)
+				if err = check_token_hanging(token_begin_pos, comma_token)
 					break
 				end
 				warns += ws2
@@ -435,7 +427,7 @@ class Parser
 				comma_tokens.push(comma_token)
 				exp_token_begin_pos = token_reader.pos
 				exp_token, ws3 = read_code_token_w()
-				if err = check_token_hanging2(exp_token_begin_pos, exp_token)
+				if err = check_token_hanging(exp_token_begin_pos, exp_token)
 					@indent_state = begin_indent
 					seek_to_pos(begin_pos)
 					return nil, [], err
@@ -470,7 +462,7 @@ class Parser
 		warns = []
 		mexp_token_begin_pos = token_reader.pos
 		mexp_token, ws1 = read_code_token_w()
-		if err = check_token_hanging2(mexp_token_begin_pos, mexp_token)
+		if err = check_token_hanging(mexp_token_begin_pos, mexp_token)
 			@indent_state = begin_indent
 			seek_to_pos(begin_pos)
 			return nil, [], err
@@ -498,7 +490,7 @@ class Parser
 			end
 			warns += ws3
 
-			if err = check_token_hanging2(pos, right_paren_token)
+			if err = check_token_hanging(pos, right_paren_token)
 				@indent_state = begin_indent
 				seek_to_pos(begin_pos)
 				return nil, [], err
@@ -559,7 +551,7 @@ class Parser
 			token_begin_pos = token_reader.pos
 			comma_token, ws2 = read_code_token_w()
 			if comma_token.is_a?(CommaToken)
-				if err = check_token_hanging2(token_begin_pos, comma_token)
+				if err = check_token_hanging(token_begin_pos, comma_token)
 					break
 				end
 				warns += ws2
@@ -568,7 +560,7 @@ class Parser
 
 				var_decl_token_begin_pos = token_reader.pos
 				var_decl_token, ws3 = read_code_token_w()
-				if err = check_token_hanging2(var_decl_token_begin_pos, var_decl_token)
+				if err = check_token_hanging(var_decl_token_begin_pos, var_decl_token)
 					@indent_state = begin_indent
 					seek_to_pos(begin_pos)
 					return nil, [], err
@@ -603,7 +595,7 @@ class Parser
 		warns = []
 		mvar_decl_token_begin_pos = token_reader.pos
 		mvar_decl_token, ws1 = read_code_token_w()
-		if err = check_token_hanging2(mvar_decl_token_begin_pos, mvar_decl_token)
+		if err = check_token_hanging(mvar_decl_token_begin_pos, mvar_decl_token)
 			@indent_state = begin_indent
 			seek_to_pos(begin_pos)
 			return nil, [], err
@@ -631,7 +623,7 @@ class Parser
 			end
 			warns += ws3
 
-			if err = check_token_hanging2(pos, right_paren_token)
+			if err = check_token_hanging(pos, right_paren_token)
 				@indent_state = begin_indent
 				seek_to_pos(begin_pos)
 				return nil, [], err
@@ -664,7 +656,7 @@ class Parser
 		warns += ws2
 
 		nest_indent()
-		if err = check_token_hanging2(equal_token_begin_pos, equal_token)
+		if err = check_token_hanging(equal_token_begin_pos, equal_token)
 			@indent_state = begin_indent
 			seek_to_pos(begin_pos)
 			return nil, equal_token, [], err
@@ -673,7 +665,7 @@ class Parser
 		nest_indent()
 		exp_token_begin_pos = token_reader.pos
 		exp_token, ws3 = read_code_token_w()
-		if err = check_token_hanging2(exp_token_begin_pos, exp_token)
+		if err = check_token_hanging(exp_token_begin_pos, exp_token)
 			@indent_state = begin_indent
 			seek_to_pos(begin_pos)
 			return nil, equal_token, [], err
