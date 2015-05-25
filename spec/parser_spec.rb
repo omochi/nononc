@@ -255,7 +255,7 @@ describe "parser" do
 			"1\n"+
 			"  * 2")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_term_we(token)
+		node, ws, err = r.parse_term_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "term 3" do
@@ -264,8 +264,8 @@ describe "parser" do
 			"* 2"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_term_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		node, ws, err = r.parse_term_we(token)
+		expect(node).to be_a IntLiteralNode
 	end
 	it "term 4" do
 		r = Parser.new(
@@ -275,24 +275,24 @@ describe "parser" do
 			"   * 3"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_term_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(ws[1]).to be_a InvalidIndentError
+		node, ws, err = r.parse_term_we(token)
+		expect(node).to be_a IntLiteralNode
 	end
 	it "term 5" do
 		r = Parser.new(
 			"1 *\n" +
 			"    2")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_term_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		node, ws, err = r.parse_term_we(token)
+		expect(err).to be_a InvalidIndentError
+		expect(err.token.pos).to eq CharPos.new(8, 1, 4)
 	end
 	it "term 6" do
 		r = Parser.new(
 			"\n" +
 			"1")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_term_we(token)
+		node, ws, err = r.parse_term_we(token)
 		expect(ws[0]).to be_nil
 	end
 
@@ -314,9 +314,9 @@ describe "parser" do
 			"3"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_polynomial_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(ws[1]).to be_a InvalidIndentError
+		node, ws, err = r.parse_polynomial_we(token)
+		expect(err).to be_a InvalidIndentError
+		expect(err.token.pos).to eq CharPos.new(4, 1, 0)
 	end
 	it "polynomial 3" do
 		r = Parser.new(
@@ -325,7 +325,7 @@ describe "parser" do
 			"  3"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_polynomial_we(token)
+		node, ws, err = r.parse_polynomial_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "polynomial 4" do
@@ -334,8 +334,8 @@ describe "parser" do
 			"+ 2"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_polynomial_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		node, ws, err = r.parse_polynomial_we(token)
+		expect(node).to be_a IntLiteralNode
 	end
 
 	it "expression" do
@@ -372,7 +372,7 @@ describe "parser" do
 			"    6" 
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_expression_we(token)
+		node, ws, err = r.parse_multiple_expression_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "multiple expression 3" do
@@ -385,9 +385,9 @@ describe "parser" do
 			"    6" 
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_expression_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(ws[0].token.pos).to eq CharPos.new(4, 1, 0)
+		node, ws, err = r.parse_multiple_expression_we(token)
+		expect(err).to be_a InvalidIndentError
+		expect(err.token.pos).to eq CharPos.new(4, 1, 0)
 	end
 	it "multiple expression 4" do
 		r = Parser.new(
@@ -399,9 +399,9 @@ describe "parser" do
 			"    6" 
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_expression_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(ws[0].token.pos).to eq CharPos.new(9, 2, 0)
+		node, ws, err = r.parse_multiple_expression_we(token)
+		expect(err).to be_a InvalidIndentError
+		expect(err.token.pos).to eq CharPos.new(9, 2, 0)
 	end
 	it "multiple expression 5" do
 		r = Parser.new(
@@ -413,9 +413,10 @@ describe "parser" do
 			"    6" 
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_expression_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(ws[0].token.pos).to eq CharPos.new(8, 2, 0)
+		node, ws, err = r.parse_multiple_expression_we(token)
+		expect(node).to be_a MultipleExpressionNode
+		expect(node.children.length).to eq 1
+		expect(r.token_reader.pos).to eq CharPos.new(7, 1, 3)
 	end
 	it "multiple expression 6" do
 		r = Parser.new(
@@ -427,7 +428,7 @@ describe "parser" do
 			"    6" 
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_expression_we(token)
+		node, ws, err = r.parse_multiple_expression_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "multiple expression 7" do
@@ -462,7 +463,7 @@ describe "parser" do
 	it "paren expression 3" do
 		r = Parser.new("a * (b + c)")
 		token, ws = r.read_code_token_w()
-		node, err = r.parse_expression_we(token)
+		node, ws, err = r.parse_expression_we(token)
 		expect(node).to be_a MultiplyNode
 		expect(node[0].str).to eq "a"
 		expect(node[1]).to be_a ParenExpressionNode
@@ -476,7 +477,7 @@ describe "parser" do
 			"()"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_paren_expression_we(token)
+		node, ws, err = r.parse_paren_expression_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "paren expression 5" do
@@ -485,7 +486,7 @@ describe "parser" do
 			"  )"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_paren_expression_we(token)
+		node, ws, err = r.parse_paren_expression_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "paren expression 6" do
@@ -494,15 +495,16 @@ describe "parser" do
 			"    )"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_paren_expression_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		node, ws, err = r.parse_paren_expression_we(token)
+		expect(err).to be_a InvalidIndentError
+		expect(err.token.pos).to eq CharPos.new(6, 1, 4)
 	end
 	it "paren expression 7" do
 		r = Parser.new(
 			"(1,\n" +
 			"  2)")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_paren_expression_we(token)
+		node, ws, err = r.parse_paren_expression_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "paren expression 8" do
@@ -511,7 +513,7 @@ describe "parser" do
 			"  2\n" + 
 			"  )")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_paren_expression_we(token)
+		node, ws, err = r.parse_paren_expression_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "paren expression 9" do
@@ -522,7 +524,7 @@ describe "parser" do
 			"  2\n" +
 			"  )")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_paren_expression_we(token)
+		node, ws, err = r.parse_paren_expression_we(token)
 		expect(ws[0]).to be_nil
 	end
 
