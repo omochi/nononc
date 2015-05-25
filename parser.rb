@@ -43,6 +43,20 @@ class Parser
 		end
 		return warns
 	end
+	def check_token_indent2(token)
+		valid_len = get_indent_len(indent_state.level)
+		if token.pos.column != valid_len
+			return InvalidIndentError.new(token, valid_len)
+		end
+		return nil
+	end
+	def check_token_hanging2(begin_pos, token)
+		if begin_pos.line != token.pos.line
+			@indent_state = @indent_state.set_hanging(true)
+			return check_token_indent2(token)
+		end
+		return nil
+	end
 	def read_token_w()
 		return token_reader.read_token_w()
 	end
@@ -198,10 +212,12 @@ class Parser
 		warns += ws1
 
 		while true
-			pos = token_reader.pos
+			token_begin_indent = @indent_state
+			token_begin_pos = token_reader.pos
+
 			token, ws2 = read_code_token_w()
 			if token.is_a?(LeftParenToken)
-				ws2 += check_token_no_newline(pos, token)
+				ws2 += check_token_no_newline(token_begin_pos, token)
 				warns += ws2
 
 				paren, ws3, err = parse_paren_expression_we(token)
@@ -213,8 +229,9 @@ class Parser
 				end
 				elem1 = CallNode.new(elem1, paren)
 			elsif token.is_a?(DotToken)
-				ws2 += check_token_hanging_indent(pos, token)
-				warns += ws2
+				if err = check_token_hanging2(token_begin_pos, token)
+					break
+				end
 
 				dot_token = token
 
@@ -230,10 +247,13 @@ class Parser
 
 				elem1 = MemberNode.new(elem1, dot_token, member_name)
 			else
-				seek_to_pos(pos)
-				return elem1, warns, nil
+				break
 			end
 		end
+
+		@indent_state = token_begin_indent
+		seek_to_pos(token_begin_pos)
+		return elem1, warns, nil
 	end
 	def parse_factor_we(ufactor_token)
 		begin_indent = @indent_state

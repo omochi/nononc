@@ -130,7 +130,8 @@ describe "parser" do
 			)
 		token, ws = r.read_token_w()
 		node, ws = r.parse_unsigned_factor_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		expect(node).to be_a NameNode
+		expect(r.token_reader.pos).to eq CharPos.new(1, 0, 1)
 	end
 	it "member access 4" do
 		r = Parser.new(
@@ -148,7 +149,8 @@ describe "parser" do
 			)
 		token, ws = r.read_token_w()
 		node, ws = r.parse_unsigned_factor_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		expect(node).to be_a NameNode
+		expect(r.token_reader.pos).to eq CharPos.new(1, 0, 1)
 	end
 	it "member access 6" do
 		r = Parser.new(
@@ -158,7 +160,11 @@ describe "parser" do
 			)
 		token, ws = r.read_token_w()
 		node, ws = r.parse_unsigned_factor_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		expect(node).to be_a MemberNode
+		expect(node[0]).to be_a NameNode
+		expect(node[0].str).to eq "a"
+		expect(node[1].str).to eq "b"
+		expect(r.token_reader.pos).to eq CharPos.new(6, 1, 4)
 	end
 	it "member access 7" do
 		r = Parser.new(
@@ -168,7 +174,12 @@ describe "parser" do
 			)
 		token, ws = r.read_token_w()
 		node, ws = r.parse_unsigned_factor_we(token)
-		expect(ws[0]).to be_nil
+		expect(node).to be_a MemberNode
+		expect(node[0]).to be_a MemberNode
+		expect(node[0][0].str).to eq "a"
+		expect(node[0][1].str).to eq "b"
+		expect(node[1].str).to eq "c"
+		expect(ws.length).to eq 0
 	end
 	it "member access 8" do
 		r = Parser.new(
@@ -178,7 +189,11 @@ describe "parser" do
 			)
 		token, ws = r.read_token_w()
 		node, ws = r.parse_unsigned_factor_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		expect(node).to be_a MemberNode
+		expect(node[0]).to be_a NameNode
+		expect(node[0].str).to eq "a"
+		expect(node[1].str).to eq "b"
+		expect(r.token_reader.pos).to eq CharPos.new(6, 1, 4)
 	end
 	it "member access 9" do
 		r = Parser.new(
@@ -198,7 +213,8 @@ describe "parser" do
 			)
 		token, ws = r.read_token_w()
 		node, ws = r.parse_unsigned_factor_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		expect(node).to be_a NameNode
+		expect(r.token_reader.pos).to eq CharPos.new(1, 0, 1)
 	end
 
 	it "sign 1" do
