@@ -620,7 +620,7 @@ describe "parser" do
 			"a: Int,\n" +
 			"  b: Int")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_variable_declaration_we(token)
+		node, ws, err = r.parse_multiple_variable_declaration_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "multi var decl 4" do
@@ -629,7 +629,7 @@ describe "parser" do
 			"  ,\n" +
 			"  b: Int")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_variable_declaration_we(token)
+		node, ws, err = r.parse_multiple_variable_declaration_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "multi var decl 5" do
@@ -637,8 +637,8 @@ describe "parser" do
 			"a: Int,\n" +
 			"   b: Int")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_variable_declaration_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
+		node, ws, err = r.parse_multiple_variable_declaration_we(token)
+		expect(err).to be_a InvalidIndentError
 	end
 	it "multi var decl 6" do
 		r = Parser.new(
@@ -646,9 +646,9 @@ describe "parser" do
 			"   ,\n" +
 			"  b: Int")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_variable_declaration_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(ws[0].token.str).to eq ","
+		node, ws, err = r.parse_multiple_variable_declaration_we(token)
+		expect(node).to be_a MultipleVariableDeclarationNode
+		expect(node.children.length).to eq 1
 	end
 	it "multi var decl 7" do
 		r = Parser.new(
@@ -656,9 +656,8 @@ describe "parser" do
 			"  ,\n" +
 			"   b: Int")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_multiple_variable_declaration_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(ws[0].token.str).to eq "b"
+		node, ws, err = r.parse_multiple_variable_declaration_we(token)
+		expect(err).to be_a InvalidIndentError
 	end
 
 	it "paren var decl 1" do
@@ -699,7 +698,7 @@ describe "parser" do
 			"  b: Int,\n" +
 			"  )")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_paren_variable_declaration_we(token)
+		node, ws, err = r.parse_paren_variable_declaration_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "paren var decl 5" do
@@ -708,9 +707,9 @@ describe "parser" do
 			"  b: Int\n" +
 			")")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_paren_variable_declaration_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(ws[0].token.str).to eq ")"
+		node, ws, err = r.parse_paren_variable_declaration_we(token)
+		expect(err).to be_a InvalidIndentError
+		expect(err.token.str).to eq ")"
 	end
 	it "paren var decl 6" do
 		r = Parser.new(
@@ -718,9 +717,8 @@ describe "parser" do
 			"b: Int\n" +
 			"  )")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_paren_variable_declaration_we(token)
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(ws[0].token.str).to eq "b"
+		node, ws, err = r.parse_paren_variable_declaration_we(token)
+		expect(err).to be_a InvalidIndentError
 	end
 
 	it "assignment 1" do
@@ -756,9 +754,8 @@ describe "parser" do
 			"    b")
 		token, ws = r.read_code_token_w()
 		node, equal, ws, err = r.parse_assignment_expression_we(token)
-		expect(node).to be_a AssignmentNode
-		expect(ws.length).to eq 1
-		expect(ws[0]).to be_a InvalidIndentError
+		expect(err).to be_a InvalidIndentError
+		expect(err.token.str).to eq "b"
 	end
 
 	it "assignment 5" do
@@ -790,9 +787,8 @@ describe "parser" do
 			"  b")
 		token, ws = r.read_code_token_w()
 		node, equal, ws, err = r.parse_assignment_expression_we(token)
-		expect(node).to be_a AssignmentNode
-		expect(ws.length).to eq 1
-		expect(ws[0]).to be_a InvalidIndentError
+		expect(err).to be_a InvalidIndentError
+		expect(err.token.str).to eq "b"
 	end
 
 	it "assignment 8" do
@@ -1011,15 +1007,7 @@ describe "parser" do
 			"   a: Int)-> Void\n")
 		token, ws = r.read_code_token_w()
 		node, ws, err = r.parse_func_statement_we(token)
-		expect(ws.length).to eq 1
-		expect(ws[0]).to be_a InvalidIndentError
-		expect(node).to be_a FunctionDefinitionNode
-		expect(node.name).to be_a NameNode
-		expect(node.args).to be_a ParenVariableDeclarationNode
-		expect(node.args.children.length).to eq 1
-		expect(node.ret).to be_a TypeNode
-		expect(node.body).to be_a BlockNode
-		expect(node.body.children.length).to eq 0
+		expect(err).to be_a InvalidIndentError
 	end
 
 	it "func 6" do
