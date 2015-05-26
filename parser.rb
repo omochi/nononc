@@ -28,13 +28,6 @@ class Parser
 		end
 		return []
 	end
-	def check_token_no_newline(begin_pos, token)
-		warns = []
-		if token.pos.line != begin_pos.line
-			warns.push(InvalidNewlineError.new(token))
-		end
-		return warns
-	end
 	def check_token_indent2(token)
 		valid_len = get_indent_len(indent_state.level)
 		if token.pos.column != valid_len
@@ -46,6 +39,12 @@ class Parser
 		if begin_pos.line != token.pos.line
 			@indent_state = @indent_state.set_hanging(true)
 			return check_token_indent2(token)
+		end
+		return nil
+	end
+	def check_token_no_newline(begin_pos, token)
+		if begin_pos.line != token.pos.line
+			return InvalidNewlineError.new(token)
 		end
 		return nil
 	end
@@ -209,7 +208,9 @@ class Parser
 
 			token, ws2 = read_code_token_w()
 			if token.is_a?(LeftParenToken)
-				ws2 += check_token_no_newline(token_begin_pos, token)
+				if err = check_token_no_newline(token_begin_pos, token)
+					break
+				end
 				warns += ws2
 
 				paren, ws3, err = parse_paren_expression_we(token)
@@ -259,7 +260,11 @@ class Parser
 			token_pos = token_reader.pos
 
 			ufactor_token, ws1 = read_code_token_w()
-			ws1 += check_token_no_newline(token_pos, ufactor_token)
+			if err = check_token_no_newline(token_pos, ufactor_token)
+				@indent_state = begin_indent
+				seek_to_pos(begin_pos)
+				return nil, [], err
+			end
 			warns += ws1
 
 			ufactor, ws2, err = parse_unsigned_factor_we(ufactor_token)
@@ -510,19 +515,32 @@ class Parser
 			return nil, [], err
 		end
 
-		pos = token_reader.pos
+		token_begin_indent = @indent_state
+		token_begin_pos = token_reader.pos
 		colon_token, ws1 = read_code_token_w()
+
+		is_type_skipped = false
 		if colon_token.is_a?(ColonToken)
-			ws1 += check_token_no_newline(pos, colon_token)
-			warns += ws1
-		else
-			seek_to_pos(pos)
+			if err = check_token_no_newline(token_begin_pos, colon_token)
+				is_type_skipped = true
+			end
+		else 
+			is_type_skipped = true
+		end
+		if is_type_skipped
+			@indent_state = token_begin_indent
+			seek_to_pos(token_begin_pos)
 			return VariableDeclarationNode.new(var_name, nil, nil), warns, nil
 		end
+		warns += ws1
 
 		type_token_begin_pos = token_reader.pos
 		type_token, ws2 = read_code_token_w()
-		ws2 += check_token_no_newline(type_token_begin_pos, type_token)
+		if err = check_token_no_newline(type_token_begin_pos, type_token)
+			@indent_state = begin_indent
+			seek_to_pos(begin_pos)
+			return nil, [], err
+		end
 		warns += ws2
 
 		type, err = parse_type_e(type_token)
@@ -690,7 +708,11 @@ class Parser
 
 		func_name_token_begin_pos = token_reader.pos
 		func_name_token, ws1 = read_code_token_w()
-		ws1 += check_token_no_newline(func_name_token_begin_pos, func_name_token)
+		if err = check_token_no_newline(func_name_token_begin_pos, func_name_token)
+			@indent_state = begin_indent
+			seek_to_pos(begin_pos)
+			return nil, [], err
+		end
 		warns += ws1
 
 		func_name, err = parse_name_e(func_name_token)
@@ -707,7 +729,12 @@ class Parser
 			seek_to_pos(begin_pos)
 			return nil, [], TokenNotLeftParenError.new(left_paren_token)
 		end
-		ws2 += check_token_no_newline(left_paren_token_begin_pos, left_paren_token)
+
+		if err = check_token_no_newline(left_paren_token_begin_pos, left_paren_token)
+			@indent_state = begin_indent
+			seek_to_pos(begin_pos)
+			return nil, [], err
+		end
 		warns += ws2
 
 		var_decl, ws3, err = parse_paren_variable_declaration_we(left_paren_token)
@@ -725,12 +752,20 @@ class Parser
 			seek_to_pos(pos)
 			return nil, [], TokenNotArrowError.new(arrow_token)
 		end
-		ws4 += check_token_no_newline(arrow_token_begin_pos, arrow_token)
+		if err = check_token_no_newline(arrow_token_begin_pos, arrow_token)
+			@indent_state = begin_indent
+			seek_to_pos(begin_pos)
+			return nil, [], err
+		end
 		warns += ws4
 
 		ret_type_token_begin_pos = token_reader.pos
 		ret_type_token, ws5 = read_code_token_w()
-		ws5 += check_token_no_newline(ret_type_token_begin_pos, ret_type_token)
+		if err = check_token_no_newline(ret_type_token_begin_pos, ret_type_token)
+			@indent_state = begin_indent
+			seek_to_pos(begin_pos)
+			return nil, [], err
+		end
 		warns += ws5
 
 		ret_type, err = parse_type_e(ret_type_token)
@@ -766,7 +801,11 @@ class Parser
 
 		exp_token_begin_pos = token_reader.pos
 		exp_token, ws1 = read_code_token_w()
-		ws1 += check_token_no_newline(exp_token_begin_pos, exp_token)
+		if err = check_token_no_newline(exp_token_begin_pos, exp_token)
+			@indent_state = begin_indent
+			seek_to_pos(begin_pos)
+			return nil, [], err
+		end
 		warns += ws1
 		exp, ws2, err = parse_expression_we(exp_token)
 		if err
@@ -801,22 +840,27 @@ class Parser
 			seek_to_pos(begin_pos)
 			return nil, nil, [], TokenNotArrowError.new(arrow_token)
 		end
-		ws2 += check_token_no_newline(arrow_token_begin_pos, arrow_token)
+		if err = check_token_no_newline(arrow_token_begin_pos, arrow_token)
+			@indent_state = begin_indent
+			seek_to_pos(begin_pos)
+			return nil, nil, [], err
+		end
 		warns += ws2
 
 		ret_type_token_begin_pos = token_reader.pos
 		ret_type_token, ws3 = read_oneline_code_token_w()
 		if ret_type_token.is_eol
-			# puts "ret type token is EOL: #{ret_type_token.inspect}"
 			warns += ws3
 			# 返り値定義の省略
 			ret_type = nil
 		else
 			seek_to_pos(ret_type_token_begin_pos)
 			ret_type_token, ws3 = read_code_token_w()
-
-			# puts "ret type token is: #{ret_type_token.inspect}"
-			ws3 += check_token_no_newline(ret_type_token_begin_pos, ret_type_token)
+			if err = check_token_no_newline(ret_type_token_begin_pos, ret_type_token)
+				@indent_state = begin_indent
+				seek_to_pos(begin_pos)
+				return nil, arrow_token, [], err
+			end
 			warns += ws3
 			ret_type, err = parse_type_e(ret_type_token)
 			if err

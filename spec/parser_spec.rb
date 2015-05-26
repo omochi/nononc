@@ -235,8 +235,8 @@ describe "parser" do
 			"a"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_factor_we(token)
-		expect(ws[0]).to be_a InvalidNewlineError
+		node, ws, err= r.parse_factor_we(token)
+		expect(err).to be_a InvalidNewlineError
 	end
 
 	it "term 1" do
@@ -546,8 +546,8 @@ describe "parser" do
 			"  ()"
 			)
 		token, ws = r.read_token_w()
-		node, ws = r.parse_unsigned_factor_we(token)
-		expect(ws[0]).to be_a InvalidNewlineError
+		node, ws, err = r.parse_unsigned_factor_we(token)
+		expect(node).to be_a NameNode
 	end
 
 	it "var decl 1" do
@@ -571,7 +571,7 @@ describe "parser" do
 		r = Parser.new(
 			"a: Int")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_variable_declaration_we(token)
+		node, ws, err = r.parse_variable_declaration_we(token)
 		expect(ws[0]).to be_nil
 	end
 	it "var decl 4" do
@@ -579,16 +579,18 @@ describe "parser" do
 			"a\n"+
 			": Int")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_variable_declaration_we(token)
-		expect(ws[0]).to be_a InvalidNewlineError
+		node, ws, err = r.parse_variable_declaration_we(token)
+		expect(node).to be_a VariableDeclarationNode
+		expect(node.children.length).to eq 1
 	end
 	it "var decl 5" do
 		r = Parser.new(
 			"a:\n"+
 			"Int")
 		token, ws = r.read_token_w()
-		node, ws = r.parse_variable_declaration_we(token)
-		expect(ws[0]).to be_a InvalidNewlineError
+		node, ws, err = r.parse_variable_declaration_we(token)
+		expect(err).to be_a InvalidNewlineError
+		expect(err.token.str).to eq "Int"
 	end
 
 	it "multi var decl 1" do
@@ -974,15 +976,8 @@ describe "parser" do
 			)
 		token, ws = r.read_code_token_w()
 		node, ws, err = r.parse_func_statement_we(token)
-		expect(ws.length).to eq 1
-		expect(ws[0]).to be_a InvalidNewlineError
-		expect(node).to be_a FunctionDefinitionNode
-		expect(node.name).to be_a NameNode
-		expect(node.args).to be_a ParenVariableDeclarationNode
-		expect(node.args.children.length).to eq 0
-		expect(node.ret).to be_a TypeNode
-		expect(node.body).to be_a BlockNode
-		expect(node.body.children.length).to eq 0
+		expect(err).to be_a InvalidNewlineError
+		expect(err.token.str).to eq "f"
 	end
 
 	it "func 4" do
@@ -1028,8 +1023,8 @@ describe "parser" do
 			"  -> Void\n")
 		token, ws = r.read_code_token_w()
 		node, ws, err = r.parse_func_statement_we(token)
-		expect(ws.length).to eq 1
-		expect(ws[0]).to be_a InvalidNewlineError
+		expect(err).to be_a InvalidNewlineError
+		expect(err.token.str).to eq "->"
 	end
 
 	it "func 8" do
@@ -1039,8 +1034,8 @@ describe "parser" do
 			"  Void\n")
 		token, ws = r.read_code_token_w()
 		node, ws, err = r.parse_func_statement_we(token)
-		expect(ws.length).to eq 1
-		expect(ws[0]).to be_a InvalidNewlineError
+		expect(err).to be_a InvalidNewlineError
+		expect(err.token.str).to eq "Void"
 	end
 
 	it "func 9" do
@@ -1220,6 +1215,22 @@ describe "parser" do
 		expect(node[0]).to be_a ClosureNode
 		expect(node[0].ret).to be_nil
 		expect(node[0].body[0].str).to eq "a"
+	end
+
+	it "closure 7" do
+		r = Parser.new(
+			"((a)->\n" + 
+			"  return a\n" +
+			"  )(1)"
+			)
+		node, ws, err = r.parse_block_statement_we()
+		expect(ws.length).to eq 0
+		expect(node).to be_a BlockNode
+		expect(node.children.length).to eq 1
+		expect(node[0]).to be_a CallNode
+		expect(node[0][0]).to be_a ParenExpressionNode
+		expect(node[0][0][0]).to be_a ClosureNode
+		expect(node[0][1]).to be_a IntLiteralNode
 	end
 
 	it "return 1" do
