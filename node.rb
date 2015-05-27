@@ -135,25 +135,51 @@ end
 
 # typeは無い事がある
 class VariableDeclarationNode < Node
-	attr_reader :name, :type
-	def initialize(name_node, colon_token, type_node)
-		@name = name_node
-		@type = type_node
+	attr_reader :name
+	attr_reader :colon_token
+	attr_reader :type
+	def initialize(name, colon_token, type)
+		@name = name
+		@colon_token = colon_token
+		@type = type
 
 		tokens = []
-		children = [name_node]
+		children = []
 
-		if type_node
+		children.push(name)
+
+		if type
 			tokens.push(colon_token)
-			children.push(type_node)
+			children.push(type)
 		end
 
 		super(tokens, children)
 	end
 end
 class MultipleVariableDeclarationNode < Node
+	attr_reader :comma_tokens, :var_decls
+	def initialize(comma_tokens, var_decls)
+		@comma_tokens = comma_tokens
+		@var_decls = var_decls
+		super(comma_tokens, var_decls)
+	end
 end
 class ParenVariableDeclarationNode < Node
+	attr_reader :left_paren_token
+	attr_reader :comma_tokens
+	attr_reader :right_paren_token
+	attr_reader :var_decls
+	def initialize(
+		left_paren_token, 
+		comma_tokens,
+		right_paren_token,
+		var_decls)
+		@left_paren_token = left_paren_token
+		@right_paren_token = right_paren_token
+		@comma_tokens = comma_tokens
+		@var_decls = var_decls
+		super([left_paren_token] + comma_tokens + [right_paren_token], var_decls)
+	end
 end
 
 
@@ -163,29 +189,86 @@ class AssignmentNode < Node
 	end
 end
 class FunctionDefinitionNode < Node
-	attr_reader :name, :args, :ret, :body
-	def initialize(func_token, name, args, ret, body)
+	attr_reader :left_paren_token
+	attr_reader :name
+	attr_reader :comma_tokens
+	attr_reader :right_paren_token
+	attr_reader :args
+	attr_reader :arrow_token
+	attr_reader :ret
+	attr_reader :body
+	def initialize(
+		func_token,
+		name,
+		left_paren_token,
+		comma_tokens,
+		right_paren_token,
+		args,
+		arrow_token,
+		ret,
+		body)
+
+		@left_paren_token = left_paren_token
 		@name = name
+		@comma_tokens = comma_tokens
+		@right_paren_token = right_paren_token
 		@args = args
-		@ret = ret
-		@body = body
-		super([func_token], [name, args, ret, body])
-	end
-end
-class ClosureNode < Node
-	attr_reader :args, :ret, :body
-	def initialize(args, ret, body)
-		@args = args
+		@arrow_token = arrow_token
 		@ret = ret
 		@body = body
 
+		tokens = []
+		tokens.push(left_paren_token)
+		tokens += comma_tokens
+		tokens.push(right_paren_token)
+		tokens.push(arrow_token)
+
 		children = []
-		children.push(args)
-		if ret
-			children.push(ret)
-		end
-		children.push(body)
-		super([], children)
+		children.push(name)
+		children += args
+		children.push(ret)
+		children += body
+
+		super(tokens, children)
+	end
+end
+class ClosureNode < Node
+	attr_reader :left_paren_token
+	attr_reader :comma_tokens
+	attr_reader :right_paren_token
+	attr_reader :args
+	attr_reader :arrow_token
+	attr_reader :ret
+	attr_reader :body
+	def initialize(
+		left_paren_token, 
+		comma_tokens,
+		right_paren_token,
+		args,
+		arrow_token,
+		ret,
+		body)
+	
+		@left_paren_token = left_paren_token
+		@comma_tokens = comma_tokens
+		@right_paren_token = right_paren_token
+		@args = args
+		@arrow_token = arrow_token
+		@ret = ret
+		@body = body
+
+		tokens = []
+		tokens.push(left_paren_token)
+		tokens += comma_tokens
+		tokens.push(right_paren_token)
+		tokens.push(arrow_token)
+
+		children = []
+		children += args
+		children.push(ret || [])
+		children += body
+
+		super(tokens, children)
 	end
 end
 class ReturnNode < Node
@@ -194,7 +277,9 @@ class ReturnNode < Node
 	end
 end
 class BlockNode < Node
+	attr_reader :statements
 	def initialize(statements)
+		@statements = statements
 		super([], statements)
 	end
 end

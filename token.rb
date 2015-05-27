@@ -33,6 +33,12 @@ class Token
 	def is_eol
 		false
 	end
+	def to_s
+		"#{self.class}(#{@str}, #{@pos}..#{@end_pos})"
+	end
+	def inspect
+		to_s
+	end
 end
 class InvalidToken < Token
 end

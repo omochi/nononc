@@ -14,4 +14,10 @@ class CharPos
 	def add_newline(line_str_len)
 		return CharPos.new(index + line_str_len, line + 1, 0)
 	end
+	def to_s
+		"(#{index}, #{line}, #{column})"
+	end
+	def inspect
+		to_s
+	end
 end

@@ -858,11 +858,10 @@ describe "parser" do
 		token, ws = r.read_code_token_w()
 		node, ws, err = r.parse_func_statement_we(token)
 		expect(node).to be_a FunctionDefinitionNode
-		expect(node[0].str).to eq "aaa"
-		expect(node[1]).to be_a ParenVariableDeclarationNode
-		expect(node[1][0][0].str).to eq "bbb"
-		expect(node[1][0][1].str).to eq "Int" 
-		expect(node[2].str).to eq "Float"
+		expect(node.name.str).to eq "aaa"
+		expect(node.args[0].name.str).to eq "bbb"
+		expect(node.args[0].type.str).to eq "Int" 
+		expect(node.ret.str).to eq "Float"
 	end
 
 	it "statements 1" do
@@ -942,11 +941,9 @@ describe "parser" do
 		expect(ws.length).to eq 0
 		expect(node).to be_a FunctionDefinitionNode
 		expect(node.name).to be_a NameNode
-		expect(node.args).to be_a ParenVariableDeclarationNode
-		expect(node.args.children.length).to eq 0
+		expect(node.args.length).to eq 0
 		expect(node.ret).to be_a TypeNode
-		expect(node.body).to be_a BlockNode
-		expect(node.body.children.length).to eq 0
+		expect(node.body.length).to eq 0
 	end
 
 	it "func 2" do
@@ -965,7 +962,7 @@ describe "parser" do
 		expect(node.args[0][1].str).to eq "Int"
 		expect(node.ret).to be_a TypeNode
 		expect(node.ret.str).to eq "Float"
-		expect(node.body.children.length).to eq 1
+		expect(node.body.length).to eq 1
 		expect(node.body[0]).to be_a AddNode
 	end
 
@@ -989,11 +986,9 @@ describe "parser" do
 		expect(ws.length).to eq 0
 		expect(node).to be_a FunctionDefinitionNode
 		expect(node.name).to be_a NameNode
-		expect(node.args).to be_a ParenVariableDeclarationNode
-		expect(node.args.children.length).to eq 1
+		expect(node.args.length).to eq 1
 		expect(node.ret).to be_a TypeNode
-		expect(node.body).to be_a BlockNode
-		expect(node.body.children.length).to eq 0
+		expect(node.body.length).to eq 0
 	end
 
 	it "func 5" do
@@ -1097,7 +1092,7 @@ describe "parser" do
 		token, ws = r.read_code_token_w()
 		node, ws, err = r.parse_func_statement_we(token)
 		expect(ws.length).to eq 0
-		expect(node.body.children.length).to eq 2
+		expect(node.body.length).to eq 2
 		expect(node.body[0].str).to eq "a"
 		expect(node.body[1].str).to eq "b"
 	end
@@ -1111,13 +1106,13 @@ describe "parser" do
 		token, ws = r.read_code_token_w()
 		node, arrow, ws, err = r.parse_closure_we(token)
 		expect(ws.length).to eq 0
-		expect(node.args.children.length).to eq 2
+		expect(node.args.length).to eq 2
 		expect(node.args[0][0].str).to eq "a"
 		expect(node.args[0][1].str).to eq "Int"
 		expect(node.args[1][0].str).to eq "b"
 		expect(node.args[1][1].str).to eq "Float"
 		expect(node.ret.str).to eq "Void"
-		expect(node.body.children.length).to eq 2
+		expect(node.body.length).to eq 2
 		expect(node.body[0]).to be_a AddNode
 		expect(node.body[1]).to be_a MultiplyNode
 	end
@@ -1134,13 +1129,13 @@ describe "parser" do
 		token, ws = r.read_code_token_w()
 		node, arrow, ws, err = r.parse_closure_we(token)
 		expect(ws.length).to eq 0
-		expect(node.args.children.length).to eq 2
+		expect(node.args.length).to eq 2
 		expect(node.args[0][0].str).to eq "a"
 		expect(node.args[0][1].str).to eq "Int"
 		expect(node.args[1][0].str).to eq "b"
 		expect(node.args[1][1].str).to eq "Float"
 		expect(node.ret.str).to eq "Void"
-		expect(node.body.children.length).to eq 2
+		expect(node.body.length).to eq 2
 		expect(node.body[0]).to be_a AddNode
 		expect(node.body[1]).to be_a MultiplyNode
 	end
@@ -1155,7 +1150,7 @@ describe "parser" do
 		expect(node).to be_a BlockNode
 		expect(node[0]).to be_a CallNode
 		expect(node[0][1]).to be_a ClosureNode
-		expect(node[0][1].body.children.length).to eq 0
+		expect(node[0][1].body.length).to eq 0
 	end
 
 	it "closure 4" do
@@ -1339,7 +1334,7 @@ describe "parser" do
 		expect(ws.length).to eq 0
 
 		expect(node[0]).to be_a FunctionDefinitionNode
-		expect(node[0].body.children.length).to eq 0
+		expect(node[0].body.length).to eq 0
 	end
 
 	it "block 8" do
@@ -1359,9 +1354,9 @@ describe "parser" do
 		expect(ws.length).to eq 0
 
 		expect(node[0]).to be_a FunctionDefinitionNode
-		expect(node[0].body.children.length).to eq 2
+		expect(node[0].body.length).to eq 2
 		expect(node[1]).to be_a FunctionDefinitionNode
-		expect(node[1].body.children.length).to eq 2
+		expect(node[1].body.length).to eq 2
 	end
 
 	it "block 9" do

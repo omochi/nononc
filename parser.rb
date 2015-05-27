@@ -623,7 +623,10 @@ class Parser
 		if mvar_decl_token.is_a?(RightParenToken)
 			right_paren_token = mvar_decl_token
 			return ParenVariableDeclarationNode.new(
-				[left_paren_token, right_paren_token], []), warns, nil
+				left_paren_token, 
+				[], 
+				right_paren_token, 
+				[]), warns, nil
 		else
 			mvar_decl, ws2, err = parse_multiple_variable_declaration_we(mvar_decl_token)
 			if err
@@ -648,7 +651,11 @@ class Parser
 			end
 
 			tokens = [left_paren_token] + mvar_decl.tokens + [right_paren_token]
-			return ParenVariableDeclarationNode.new(tokens, mvar_decl.children), warns, nil
+			return ParenVariableDeclarationNode.new(
+				left_paren_token,
+				mvar_decl.comma_tokens,
+				right_paren_token,
+				mvar_decl.var_decls), warns, nil
 		end
 	end
 	# ret: node, equal_token, warns, err
@@ -789,8 +796,15 @@ class Parser
 		@indent_state = begin_indent
 		
 		return FunctionDefinitionNode.new(
-			func_keyword_token, func_name, var_decl, ret_type,
-			func_body), warns, nil
+			func_keyword_token, 
+			func_name, 
+			var_decl.left_paren_token,
+			var_decl.comma_tokens,
+			var_decl.right_paren_token,
+			var_decl.var_decls,
+			arrow_token,
+			ret_type,
+			func_body.statements), warns, nil
 	end
 
 	def parse_return_statement_we(return_token)
@@ -882,7 +896,14 @@ class Parser
 		warns += ws5
 		@indent_state = begin_indent
 
-		return ClosureNode.new(var_decl, ret_type, body), arrow_token, warns, nil
+		return ClosureNode.new(
+			var_decl.left_paren_token,
+			var_decl.comma_tokens,
+			var_decl.right_paren_token,
+			var_decl.var_decls,
+			arrow_token,
+			ret_type, 
+			body.statements), arrow_token, warns, nil
 	end
 
 	def parse_block_entry_statement_we(token)
