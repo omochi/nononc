@@ -220,7 +220,12 @@ class Parser
 					seek_to_pos(begin_pos)
 					return nil, [], err
 				end
-				elem1 = CallNode.new(elem1, paren)
+				elem1 = CallNode.new(
+					elem1,
+					paren.left_paren_token,
+					paren.comma_tokens,
+					paren.right_paren_token,
+					paren.expressions)
 			elsif token.is_a?(DotToken)
 				if err = check_token_hanging(token_begin_pos, token)
 					break
@@ -476,7 +481,11 @@ class Parser
 
 		if mexp_token.is_a?(RightParenToken)
 			right_paren_token = mexp_token
-			return ParenExpressionNode.new([left_paren_token, right_paren_token], []), warns, nil
+			return ParenExpressionNode.new(
+				left_paren_token, 
+				[], 
+				right_paren_token, 
+				[]), warns, nil
 		else
 			mexp, ws2, err = parse_multiple_expression_we(mexp_token)
 			if err
@@ -502,7 +511,11 @@ class Parser
 			end
 
 			tokens = [left_paren_token] + mexp.tokens + [right_paren_token]
-			return ParenExpressionNode.new(tokens, mexp.children), warns, nil
+			return ParenExpressionNode.new(
+				left_paren_token,
+				mexp.comma_tokens,
+				right_paren_token,
+				mexp.expressions), warns, nil
 		end
 	end
 	def parse_variable_declaration_we(var_name_token)

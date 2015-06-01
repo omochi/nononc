@@ -1,3 +1,5 @@
+require "./env"
+
 class NodePrinter
 	attr_reader :buf
 	def initialize()
@@ -29,20 +31,29 @@ class Node
 	def [](index)
 		@children[index]
 	end
-	def inspect()
+	def inspect
 		pr = NodePrinter.new()
 		print_with_printer(pr)
 		return pr.buf
 	end
-	def to_s()
-		return inspect()
+	def to_s
+		parts = []
+
+		parts.push(
+			"tokens=[" + tokens.map {|t| t.to_s }.join(", ") + "]"
+			)
+		parts.push("child=#{children.length}")
+		if token = tokens.first
+			parts.push("pos=#{token.pos}")
+		end
+		return "#{self.class}(" + parts.join(", ") + ")"		
 	end
 	def print_with_printer(pr)
-		str = "#{self.class}"
-		if @tokens
-			str += "(#{@tokens})"
-		end
-		pr.print(str)
+		parts = []
+		parts.push(
+			"tokens=[" + tokens.map {|t| t.inspect }.join(", ") + "]"
+			)
+		pr.print("#{self.class}(" + parts.join(", ") + ")")
 		pr.push()
 		@children.each { |c| c.print_with_printer(pr) }
 		pr.pop()
@@ -50,40 +61,88 @@ class Node
 end
 
 class NameNode < Node
+	attr_reader :token
 	def initialize(token)
+		@token = token
 		super([token], [])
 	end
+	def with_children()
+		return NameNode.new(token)
+	end
 	def str
-		tokens[0].str
+		token.str
 	end
 end
 class TypeNode < Node
+	attr_reader :token
 	def initialize(token)
+		@token = token
 		super([token], [])
 	end
+	def with_children()
+		return NameNode.new(token)
+	end
 	def str
-		tokens[0].str
+		token.str
 	end
 end
 class IntLiteralNode < Node
+	attr_reader :token
 	def initialize(token)
+		@token = token
 		super([token], [])
 	end
 	def value
-		tokens[0].value
+		token.value
 	end
 end
 class FloatLiteralNode < Node
+	attr_reader :token
 	def initialize(token)
+		@token = token
 		super([token], [])
 	end
 	def value
-		tokens[0].value
+		token.value
 	end
 end
 class CallNode < Node
-	def initialize(obj, paren_node)
-		super(paren_node.tokens, [obj] + paren_node.children)
+	attr_reader :function
+	attr_reader :left_paren_token
+	attr_reader :comma_tokens
+	attr_reader :right_paren_token
+	attr_reader :args
+	def initialize(
+		function,
+		left_paren_token,
+		comma_tokens,
+		right_paren_token,
+		args)
+		@function = function
+		@left_paren_token = left_paren_token
+		@comma_tokens = comma_tokens
+		@right_paren_token = right_paren_token
+		@args = args
+
+		tokens = []
+		tokens.push(left_paren_token)
+		tokens += comma_tokens
+		tokens.push(right_paren_token)
+
+		children = []
+		children.push(function)
+		children += args
+
+		super(tokens, children)
+	end
+	def with_children(function, args)
+		return CallNode.new(
+			function,
+			left_paren_token,
+			comma_tokens,
+			right_paren_token,
+			args
+			)
 	end
 end
 class MemberNode < Node
@@ -129,8 +188,42 @@ class MinusSignNode < Node
 end
 
 class MultipleExpressionNode < Node
+	attr_reader :comma_tokens
+	attr_reader :expressions
+	def initialize(
+		comma_tokens,
+		expressions)
+		@comma_tokens = comma_tokens
+		@expressions = expressions
+
+		super(comma_tokens, expressions)
+	end
 end
 class ParenExpressionNode < Node
+	attr_reader :left_paren_token
+	attr_reader :comma_tokens
+	attr_reader :right_paren_token
+	attr_reader :expressions
+	def initialize(
+		left_paren_token,
+		comma_tokens,
+		right_paren_token,
+		expressions)
+		@left_paren_token = left_paren_token
+		@comma_tokens = comma_tokens
+		@right_paren_token = right_paren_token
+		@expressions = expressions
+
+		tokens = []
+		tokens.push(left_paren_token)
+		tokens += comma_tokens
+		tokens.push(right_paren_token)
+		
+		children = []
+		children += expressions
+
+		super(tokens, children)
+	end
 end
 
 # typeは無い事がある
@@ -154,6 +247,9 @@ class VariableDeclarationNode < Node
 		end
 
 		super(tokens, children)
+	end
+	def with_children(name, type)
+		return VariableDeclarationNode.new(name, colon_token, type)
 	end
 end
 class MultipleVariableDeclarationNode < Node
@@ -265,15 +361,46 @@ class ClosureNode < Node
 
 		children = []
 		children += args
-		children.push(ret || [])
+		if ret
+			children.push(ret)
+		end
 		children += body
 
 		super(tokens, children)
 	end
+	def with_children(args, ret, body)
+		return ClosureNode.new(
+			left_paren_token,
+			comma_tokens,
+			right_paren_token,
+			args,
+			arrow_token,
+			ret,
+			body)
+	end
+	def generate_local_env(env)
+		name_table = env.name_table.clone()
+		for arg in args
+			name_table[arg.name.str] = arg.name
+		end
+		return env.make_child().with_name_table(name_table)
+	end
 end
 class ReturnNode < Node
-	def initialize(return_token, exp)
-		super([return_token], [exp])
+	attr_reader :return_token
+	attr_reader :expression
+	def initialize(return_token, expression)
+		@return_token = return_token
+		@expression = expression
+
+		children = []
+		if expression
+			children.push(expression)
+		end
+		super([return_token], children)
+	end
+	def with_children(expression)
+		return ReturnNode.new(return_token, expression)
 	end
 end
 class BlockNode < Node

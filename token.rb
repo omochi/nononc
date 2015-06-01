@@ -34,10 +34,10 @@ class Token
 		false
 	end
 	def to_s
-		"#{self.class}(#{@str}, #{@pos}..#{@end_pos})"
+		"#{@str.inspect}"
 	end
 	def inspect
-		to_s
+		"#{self.class}(#{to_s}, #{@pos}..#{@end_pos})"
 	end
 end
 class InvalidToken < Token

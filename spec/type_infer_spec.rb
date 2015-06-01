@@ -1,25 +1,22 @@
 require "spec_helper"
 
-require "./type/type_constrain"
+require "./infer"
 
 describe "type_infer" do
-	# it "1" do
-	# 	parser = Parser.new("1")
-	# 	token, ws = parser.read_code_token_w()
-	# 	node, ws, err = parser.parse_element_we(token)
-	# 	expect(node).to be_a IntLiteralNode
+	it "temp1", focus: true do
+		parser = Parser.new(
+			"(a)->\n" +
+			"  return a"
+			)
+		node, ws, err = parser.parse_block_statement_we()
+		expect(node[0]).to be_a ClosureNode
 
-	# 	cs = get_type_constrains(node)
-	# 	p cs
-	# end
-	# it "2" do
-	# 	parser = Parser.new(
-	# 		"((a)->\n" +
-	# 		"  return a)(3)"
-	# 		)
-	# 	node, ws, err = parser.parse_block_statement_we()
-	# 	expect(node[0]).to be_a CallNode
-	# 	cs = get_type_constrains(node[0])
-	# 	p cs
-	# end
+		consts = collect_type_constraints(Env.new(), node[0])
+		puts "consts"
+		puts consts.join("\n")
+
+		subst_table = unify_type(consts)
+		puts "subst table"
+		puts subst_table
+	end
 end
